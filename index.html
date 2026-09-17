@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Smith-Waterman Matrix Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FAFAF8;
+    --surface: #FFFFFF;
+    --ink: #1C2321;
+    --muted: #6B7280;
+    --line: #D8D6CE;
+    --line-strong: #B7B4A8;
+    --accent: #B3801F;       /* traceback path */
+    --accent-soft: #F1E3C3;
+    --tie: #A8412B;          /* tie marker */
+    --tie-soft: #F5DDD5;
+    --zero: #EDEBE3;
+    --focus: #2A6F6F;
+    --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+  :root:not([data-theme="light"]) {
+    @media (prefers-color-scheme: dark) {
+      --bg: #14171A;
+      --surface: #1B1F23;
+      --ink: #ECE9E2;
+      --muted: #9CA3AF;
+      --line: #33383D;
+      --line-strong: #454C52;
+      --accent: #D9A63D;
+      --accent-soft: #3A3020;
+      --tie: #E08064;
+      --tie-soft: #3D2822;
+      --zero: #24282C;
+      --focus: #4FA8A8;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #14171A;
+    --surface: #1B1F23;
+    --ink: #ECE9E2;
+    --muted: #9CA3AF;
+    --line: #33383D;
+    --line-strong: #454C52;
+    --accent: #D9A63D;
+    --accent-soft: #3A3020;
+    --tie: #E08064;
+    --tie-soft: #3D2822;
+    --zero: #24282C;
+    --focus: #4FA8A8;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--font-sans);
+    line-height: 1.45;
+    padding: 28px 20px 60px;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; }
+
+  header.page {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 18px;
+    margin-bottom: 22px;
+  }
+  header.page h1 {
+    font-family: var(--font-mono);
+    font-size: 22px;
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: -0.01em;
+  }
+  header.page p {
+    margin: 4px 0 0;
+    color: var(--muted);
+    font-size: 13.5px;
+    max-width: 60ch;
+  }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 18px 20px;
+    margin-bottom: 18px;
+  }
+  .panel > h2 {
+    font-size: 12px;
+    text-transform: none;
+    font-weight: 600;
+    color: var(--muted);
+    margin: 0 0 14px;
+    font-family: var(--font-mono);
+  }
+
+  .controls-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px 20px;
+  }
+  @media (max-width: 720px) {
+    .controls-grid { grid-template-columns: 1fr; }
+  }
+  .field label {
+    display: block;
+    font-size: 12.5px;
+    color: var(--muted);
+    margin-bottom: 5px;
+  }
+  .field input[type="text"] {
+    width: 100%;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    letter-spacing: 0.03em;
+    padding: 8px 10px;
+    border: 1px solid var(--line-strong);
+    border-radius: 3px;
+    background: var(--bg);
+    color: var(--ink);
+    text-transform: uppercase;
+  }
+  .field input[type="text"]:focus, .field input[type="number"]:focus {
+    outline: 2px solid var(--focus);
+    outline-offset: 1px;
+  }
+
+  .param-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-top: 14px;
+  }
+  @media (max-width: 720px) {
+    .param-row { grid-template-columns: 1fr 1fr; }
+  }
+  .field input[type="number"] {
+    width: 100%;
+    font-family: var(--font-mono);
+    font-size: 14px;
+    padding: 8px 10px;
+    border: 1px solid var(--line-strong);
+    border-radius: 3px;
+    background: var(--bg);
+    color: var(--ink);
+  }
+  .gap-note {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 10px;
+    font-family: var(--font-mono);
+  }
+
+  .btn-row { display: flex; gap: 10px; margin-top: 16px; align-items: center; flex-wrap: wrap; }
+  button.compute {
+    font-family: var(--font-sans);
+    font-weight: 600;
+    font-size: 13.5px;
+    background: var(--ink);
+    color: var(--bg);
+    border: none;
+    padding: 10px 18px;
+    border-radius: 3px;
+    cursor: pointer;
+  }
+  button.compute:hover { opacity: 0.88; }
+  .error-msg {
+    color: var(--tie);
+    font-size: 13px;
+    font-family: var(--font-mono);
+  }
+
+  .stats-row {
+    display: flex;
+    gap: 28px;
+    flex-wrap: wrap;
+  }
+  .stat .num {
+    font-family: var(--font-mono);
+    font-size: 26px;
+    font-weight: 700;
+  }
+  .stat .lbl {
+    font-size: 12px;
+    color: var(--muted);
+    margin-top: 2px;
+  }
+
+  .legend {
+    display: flex;
+    gap: 18px;
+    flex-wrap: wrap;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+  .legend span.swatch {
+    display: inline-block;
+    width: 11px; height: 11px;
+    border-radius: 2px;
+    margin-right: 5px;
+    vertical-align: -1px;
+    border: 1px solid var(--line-strong);
+  }
+
+  .matrix-scroll {
+    overflow: auto;
+    max-height: 560px;
+    border: 1px solid var(--line);
+    border-radius: 3px;
+  }
+  table.matrix {
+    border-collapse: collapse;
+    font-family: var(--font-mono);
+    font-size: 12.5px;
+  }
+  table.matrix th, table.matrix td {
+    border: 1px solid var(--line);
+    min-width: 46px;
+    height: 34px;
+    text-align: center;
+    padding: 0 4px;
+  }
+  table.matrix thead th {
+    position: sticky;
+    top: 0;
+    background: var(--surface);
+    z-index: 2;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  table.matrix thead th.seqhead {
+    color: var(--ink);
+    font-weight: 700;
+  }
+  table.matrix tbody th {
+    position: sticky;
+    left: 0;
+    background: var(--surface);
+    z-index: 1;
+    color: var(--muted);
+    font-weight: 600;
+  }
+  table.matrix thead th:first-child,
+  table.matrix tbody th {
+    z-index: 3;
+  }
+  table.matrix td.cell {
+    cursor: pointer;
+    background: var(--surface);
+  }
+  table.matrix td.cell:hover {
+    outline: 1.5px solid var(--focus);
+    outline-offset: -1.5px;
+  }
+  table.matrix td.zero-cell { background: var(--zero); color: var(--muted); }
+  table.matrix td.tie-cell { background: var(--tie-soft); }
+  table.matrix td.path-cell { background: var(--accent-soft); font-weight: 700; }
+  table.matrix td.path-cell.tie-cell {
+    background: linear-gradient(135deg, var(--accent-soft) 50%, var(--tie-soft) 50%);
+  }
+  table.matrix td.start-cell { box-shadow: inset 0 0 0 2px var(--accent); }
+  table.matrix td.selected-cell { box-shadow: inset 0 0 0 2px var(--focus); }
+  .tie-dot {
+    display: inline-block;
+    width: 4px; height: 4px;
+    border-radius: 50%;
+    background: var(--tie);
+    margin-left: 2px;
+    vertical-align: 3px;
+  }
+
+  .below-matrix {
+    display: grid;
+    grid-template-columns: 1.1fr 0.9fr;
+    gap: 18px;
+    margin-top: 18px;
+    align-items: start;
+  }
+  @media (max-width: 900px) {
+    .below-matrix { grid-template-columns: 1fr; }
+  }
+
+  .cell-detail {
+    font-family: var(--font-mono);
+    font-size: 13px;
+  }
+  .cell-detail .coord {
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+  .cell-detail table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 10px;
+  }
+  .cell-detail table td, .cell-detail table th {
+    text-align: left;
+    padding: 4px 6px;
+    border-bottom: 1px solid var(--line);
+    font-size: 12.5px;
+  }
+  .cell-detail table th { color: var(--muted); font-weight: 600; }
+  .pill {
+    display: inline-block;
+    font-size: 11px;
+    padding: 1px 7px;
+    border-radius: 10px;
+    background: var(--zero);
+    color: var(--muted);
+  }
+  .pill.chosen { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+  .pill.tied { background: var(--tie-soft); color: var(--tie); }
+  .placeholder {
+    color: var(--muted);
+    font-size: 13px;
+  }
+
+  .alignment-card {
+    border: 1px solid var(--line);
+    border-radius: 3px;
+    padding: 12px 14px;
+    margin-bottom: 12px;
+    background: var(--bg);
+  }
+  .alignment-card:last-child { margin-bottom: 0; }
+  .alignment-card .meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--muted);
+    margin-bottom: 8px;
+    font-family: var(--font-sans);
+  }
+  .alignment-card .meta b { color: var(--ink); }
+  pre.align-block {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    white-space: pre;
+    overflow-x: auto;
+    margin: 0;
+    line-height: 1.6;
+  }
+  .align-line.seq1 { color: var(--ink); }
+  .align-line.mid { color: var(--focus); }
+  .align-line.seq2 { color: var(--ink); }
+  .tie-note {
+    margin-top: 8px;
+    font-size: 11.5px;
+    color: var(--tie);
+    font-family: var(--font-sans);
+  }
+
+  footer.hint {
+    margin-top: 22px;
+    font-size: 11.5px;
+    color: var(--muted);
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="page">
+    <div>
+      <h1>sequence alignment / matrix dashboard</h1>
+      <p>Global, semi-global, or local alignment with affine gaps. Choose a boundary regime, then click any cell to inspect its score breakdown and ties.</p>
+    </div>
+  </header>
+
+  <section class="panel">
+    <h2>sequences &amp; parameters</h2>
+    <div class="field" style="margin-bottom:14px; max-width:420px;">
+      <label for="mode">Alignment boundary setting</label>
+      <select id="mode" style="width:100%; border:1px solid var(--line-strong); border-radius:3px; padding:10px 11px; font:inherit; background:var(--surface); color:var(--ink);">
+        <option value="local" selected>Local (Smith–Waterman)</option>
+        <option value="semiglobal">Semi-global</option>
+        <option value="global">Global</option>
+      </select>
+      <div class="gap-note" id="modeNote" style="margin-top:7px;"></div>
+    </div>
+    <div class="controls-grid">
+      <div class="field">
+        <label for="seq1">Sequence 1 (rows)</label>
+        <input type="text" id="seq1" value="TTCATA" maxlength="28">
+      </div>
+      <div class="field">
+        <label for="seq2">Sequence 2 (columns)</label>
+        <input type="text" id="seq2" value="TGCTCGTA" maxlength="28">
+      </div>
+    </div>
+    <div class="param-row">
+      <div class="field">
+        <label for="match">Match score</label>
+        <input type="number" id="match" value="5" step="1">
+      </div>
+      <div class="field">
+        <label for="mismatch">Mismatch score</label>
+        <input type="number" id="mismatch" value="-2" step="1">
+      </div>
+      <div class="field">
+        <label for="gapOpen">Gap open (first unit)</label>
+        <input type="number" id="gapOpen" value="6" step="1" min="0">
+      </div>
+      <div class="field">
+        <label for="gapExtend">Gap extend (per extra unit)</label>
+        <input type="number" id="gapExtend" value="2" step="1" min="0">
+      </div>
+    </div>
+    <div class="gap-note">gap of length n costs open + extend × (n − 1) &nbsp;→&nbsp; w(n) = <span id="gapFormulaPreview">6 + 2(n − 1)</span></div>
+    <div class="btn-row">
+      <button class="compute" id="computeBtn">Compute matrix</button>
+      <span class="error-msg" id="errorMsg"></span>
+    </div>
+  </section>
+
+  <section class="panel" id="resultsPanel" style="display:none;">
+    <h2>summary</h2>
+    <div class="stats-row">
+      <div class="stat"><div class="num" id="statScore">–</div><div class="lbl">top alignment score</div></div>
+      <div class="stat"><div class="num" id="statLen1">–</div><div class="lbl">seq 1 length</div></div>
+      <div class="stat"><div class="num" id="statLen2">–</div><div class="lbl">seq 2 length</div></div>
+      <div class="stat"><div class="num" id="statStarts">–</div><div class="lbl">cells tied for top score</div></div>
+    </div>
+  </section>
+
+  <section class="panel" id="matrixPanel" style="display:none;">
+    <h2 id="matrixHeading">S matrix (local alignment scores)</h2>
+    <div class="legend">
+      <div><span class="swatch" style="background:var(--zero)"></span>zero cell</div>
+      <div><span class="swatch" style="background:var(--tie-soft)"></span>tie between ≥2 cases</div>
+      <div><span class="swatch" style="background:var(--accent-soft)"></span>on a traceback path</div>
+      <div><span class="swatch" style="box-shadow:inset 0 0 0 2px var(--accent); background:var(--surface)"></span>alignment start (max cell)</div>
+      <div><span class="tie-dot" style="margin-left:0;"></span> = cell has a tie (click for detail)</div>
+    </div>
+    <div class="matrix-scroll">
+      <table class="matrix" id="matrixTable"></table>
+    </div>
+
+    <div class="below-matrix">
+      <div class="panel" style="margin:18px 0 0; padding:16px 18px;">
+        <h2>cell detail</h2>
+        <div id="cellDetail"><div class="placeholder">Click a cell in the matrix to see its score breakdown, including any cases that tied for the max.</div></div>
+      </div>
+      <div class="panel" style="margin:18px 0 0; padding:16px 18px;">
+        <h2>alignments found</h2>
+        <div id="alignmentsList"></div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="hint" id="footerHint">Tie order when picking the traceback pointer: diagonal (aligned pair) → horizontal (gap in seq 1) → vertical (gap in seq 2) → zero. Sequences are capped at 28 characters so the matrix stays readable.</footer>
+</div>
+
+<script>
+(function () {
+  const modeInput = document.getElementById('mode');
+  const modeNote = document.getElementById('modeNote');
+  const matrixHeading = document.getElementById('matrixHeading');
+  const footerHint = document.getElementById('footerHint');
+  const seq1Input = document.getElementById('seq1');
+  const seq2Input = document.getElementById('seq2');
+  const matchInput = document.getElementById('match');
+  const mismatchInput = document.getElementById('mismatch');
+  const gapOpenInput = document.getElementById('gapOpen');
+  const gapExtendInput = document.getElementById('gapExtend');
+  const computeBtn = document.getElementById('computeBtn');
+  const errorMsg = document.getElementById('errorMsg');
+  const gapFormulaPreview = document.getElementById('gapFormulaPreview');
+  const resultsPanel = document.getElementById('resultsPanel');
+  const matrixPanel = document.getElementById('matrixPanel');
+  const matrixTable = document.getElementById('matrixTable');
+  const cellDetail = document.getElementById('cellDetail');
+  const alignmentsList = document.getElementById('alignmentsList');
+  const statScore = document.getElementById('statScore');
+  const statLen1 = document.getElementById('statLen1');
+  const statLen2 = document.getElementById('statLen2');
+  const statStarts = document.getElementById('statStarts');
+
+  let lastSelectedTd = null, cellData = null, seq1 = '', seq2 = '', currentMode = 'local';
+
+  function updateGapPreview() {
+    gapFormulaPreview.textContent = Number(gapOpenInput.value) + ' + ' + Number(gapExtendInput.value) + '(n − 1)';
+  }
+  function updateModeNote() {
+    const mode = modeInput.value;
+    const notes = {
+      local: 'Initialization: S(i,0)=0, S(0,j)=0. Four cases include 0. Traceback starts at the largest cell anywhere and stops at the first 0.',
+      semiglobal: 'Initialization: margins are 0 (free leading end gaps). Three recurrence cases. Traceback starts at the best cell in the last row or last column and ends when row 0 or column 0 is reached; unaligned ends are free.',
+      global: 'Initialization: boundary gaps are penalized with the selected affine gap formula. Three recurrence cases. Traceback starts at S(M,N) and ends at S(0,0).'
+    };
+    modeNote.textContent = notes[mode];
+  }
+  [gapOpenInput, gapExtendInput].forEach(el => el.addEventListener('input', updateGapPreview));
+  modeInput.addEventListener('change', updateModeNote);
+  updateGapPreview(); updateModeNote();
+
+  function sanitizeSeq(raw) { return raw.toUpperCase().replace(/[^A-Z]/g, ''); }
+  function bestWithPriority(items) {
+    const best = Math.max(...items.map(x => x.val));
+    return {best, ties: items.filter(x => x.val === best), primary: items.find(x => x.val === best)};
+  }
+
+  function computeMatrices(s1, s2, match, mismatch, gapOpen, gapExtend, mode) {
+    const n=s1.length, m=s2.length, NEG=-Infinity;
+    const S=Array.from({length:n+1},()=>new Array(m+1).fill(NEG));
+    const D=Array.from({length:n+1},()=>new Array(m+1).fill(NEG));
+    const E=Array.from({length:n+1},()=>new Array(m+1).fill(NEG));
+    const F=Array.from({length:n+1},()=>new Array(m+1).fill(NEG));
+    const data=Array.from({length:n+1},()=>new Array(m+1).fill(null));
+
+    D[0][0]=0; S[0][0]=0;
+    if (mode==='local' || mode==='semiglobal') {
+      for (let j=1;j<=m;j++) S[0][j]=0;
+      for (let i=1;i<=n;i++) S[i][0]=0;
+      if (mode==='semiglobal') {
+        // Free leading ends are represented as gap states at score 0.
+        for (let j=1;j<=m;j++) E[0][j]=0;
+        for (let i=1;i<=n;i++) F[i][0]=0;
+      }
+    } else {
+      // Global affine boundaries: a length-k gap costs open + extend*(k-1).
+      for (let j=1;j<=m;j++) { E[0][j] = -gapOpen-gapExtend*(j-1); S[0][j]=E[0][j]; }
+      for (let i=1;i<=n;i++) { F[i][0] = -gapOpen-gapExtend*(i-1); S[i][0]=F[i][0]; }
+    }
+
+    for (let i=1;i<=n;i++) for (let j=1;j<=m;j++) {
+      const pair=(s1[i-1]===s2[j-1])?match:mismatch;
+      const diagPrev=[{type:'diag',val:D[i-1][j-1]},{type:'horiz',val:E[i-1][j-1]},{type:'vert',val:F[i-1][j-1]}];
+      if (mode==='local') diagPrev.push({type:'zero',val:0});
+      const bd=bestWithPriority(diagPrev);
+      D[i][j]=bd.best+pair;
+
+      const eOpen=D[i][j-1]===NEG?NEG:D[i][j-1]-gapOpen;
+      const eExt=E[i][j-1]===NEG?NEG:E[i][j-1]-gapExtend;
+      E[i][j]=Math.max(eOpen,eExt);
+      const ePrev=eOpen>=eExt?'diag':'horiz';
+      const fOpen=D[i-1][j]===NEG?NEG:D[i-1][j]-gapOpen;
+      const fExt=F[i-1][j]===NEG?NEG:F[i-1][j]-gapExtend;
+      F[i][j]=Math.max(fOpen,fExt);
+      const fPrev=fOpen>=fExt?'diag':'vert';
+
+      const candidates=[{type:'diag',val:D[i][j]},{type:'horiz',val:E[i][j]},{type:'vert',val:F[i][j]}];
+      if (mode==='local') candidates.push({type:'zero',val:0});
+      const bs=bestWithPriority(candidates);
+      S[i][j]=bs.best;
+      data[i][j]={H:S[i][j],diag:D[i][j],horizOpen:eOpen,horizExt:eExt,horiz:E[i][j],vertOpen:fOpen,vertExt:fExt,vert:F[i][j],ties:bs.ties,primary:bs.primary,diagPrevTies:bd.ties,ePrev,fPrev};
+    }
+    return {H:S,D,E,F,data,n,m,mode};
+  }
+
+  function traceback(mats,s1,s2,startI,startJ,startState=null) {
+    const {H:S,data,mode}=mats;
+    let i=startI,j=startJ,state=startState || data[i][j]?.primary.type;
+    const steps=[];
+    while (true) {
+      if (mode==='local') {
+        if (i===0 || j===0 || state==='zero' || S[i][j]===0) break;
+      } else if (mode==='semiglobal') {
+        if (i===0 || j===0) break;
+      } else {
+        if (i===0 && j===0) break;
+        if (i===0) { steps.push({i:0,j,dir:'horiz',tie:false,score:S[0][j]}); j--; state='horiz'; continue; }
+        if (j===0) { steps.push({i,j:0,dir:'vert',tie:false,score:S[i][0]}); i--; state='vert'; continue; }
+      }
+      const cell=data[i][j]; if (!cell) break;
+      const tie=cell.ties.length>1;
+      if (state==='diag') { steps.push({i,j,dir:'diag',tie,score:S[i][j]}); state=cell.diagPrevTies[0].type; i--;j--; }
+      else if (state==='horiz') { steps.push({i,j,dir:'horiz',tie,score:S[i][j]}); state=cell.ePrev; j--; }
+      else if (state==='vert') { steps.push({i,j,dir:'vert',tie,score:S[i][j]}); state=cell.fPrev; i--; }
+      else break;
+    }
+    // Semi-global: include free leading overhangs in the displayed alignment.
+    if (mode==='semiglobal') {
+      while (i>0) { steps.push({i,j:0,dir:'vert',tie:false,score:0}); i--; }
+      while (j>0) { steps.push({i:0,j,dir:'horiz',tie:false,score:0}); j--; }
+    }
+    let a1='',a2='',mid='';
+    for (const st of steps) {
+      if(st.dir==='diag'){const c1=s1[st.i-1],c2=s2[st.j-1];a1+=c1;a2+=c2;mid+=(c1===c2?'|':'.');}
+      else if(st.dir==='horiz'){a1+='-';a2+=s2[st.j-1];mid+=' ';}
+      else {a1+=s1[st.i-1];a2+='-';mid+=' ';}
+    }
+    a1=[...a1].reverse().join('');a2=[...a2].reverse().join('');mid=[...mid].reverse().join('');
+    // Semi-global: append the free trailing overhang beyond the chosen last-row/last-column start cell.
+    if (mode==='semiglobal') {
+      if (startI===mats.n && startJ<mats.m) { for(let jj=startJ+1;jj<=mats.m;jj++){a1+='-';a2+=s2[jj-1];mid+=' ';} }
+      else if (startJ===mats.m && startI<mats.n) { for(let ii=startI+1;ii<=mats.n;ii++){a1+=s1[ii-1];a2+='-';mid+=' ';} }
+    }
+    const xPos=steps.filter(st=>st.dir==='diag'||st.dir==='vert').map(st=>st.i).filter(Boolean);
+    const yPos=steps.filter(st=>st.dir==='diag'||st.dir==='horiz').map(st=>st.j).filter(Boolean);
+    return {a1,a2,mid,steps,startI,startJ,xStart:xPos.length?Math.min(...xPos):null,xEnd:xPos.length?Math.max(...xPos):null,yStart:yPos.length?Math.min(...yPos):null,yEnd:yPos.length?Math.max(...yPos):null,score:S[startI][startJ],tieCount:steps.filter(s=>s.tie).length};
+  }
+
+  function chooseStarts(mats) {
+    const {H:S,n,m,mode}=mats;
+    if (mode==='global') return {score:S[n][m],cells:[[n,m]]};
+    if (mode==='semiglobal') {
+      let best=-Infinity,cells=[];
+      for(let j=0;j<=m;j++){const v=S[n][j];if(v>best){best=v;cells=[[n,j]];}else if(v===best)cells.push([n,j]);}
+      for(let i=0;i<n;i++){const v=S[i][m];if(v>best){best=v;cells=[[i,m]];}else if(v===best)cells.push([i,m]);}
+      return {score:best,cells};
+    }
+    let best=0,cells=[];
+    for(let i=1;i<=n;i++)for(let j=1;j<=m;j++){const v=S[i][j];if(v>best){best=v;cells=[[i,j]];}else if(v===best&&v>0)cells.push([i,j]);}
+    return {score:best,cells};
+  }
+
+  function runCompute(){
+    errorMsg.textContent='';
+    const s1=sanitizeSeq(seq1Input.value),s2=sanitizeSeq(seq2Input.value),match=Number(matchInput.value),mismatch=Number(mismatchInput.value),go=Number(gapOpenInput.value),ge=Number(gapExtendInput.value),mode=modeInput.value;
+    if(!s1.length||!s2.length){errorMsg.textContent='Enter letters (A–Z) for both sequences.';return;}
+    if(s1.length>28||s2.length>28){errorMsg.textContent='Sequences capped at 28 characters each.';return;}
+    if([match,mismatch,go,ge].some(Number.isNaN)){errorMsg.textContent='All scoring parameters must be numbers.';return;}
+    seq1=s1;seq2=s2;currentMode=mode;
+    const mats=computeMatrices(s1,s2,match,mismatch,go,ge,mode);cellData=mats;lastSelectedTd=null;
+    renderMatrix(mats,s1,s2);renderSummaryAndAlignments(mats,s1,s2);
+    resultsPanel.style.display='';matrixPanel.style.display='';
+  }
+
+  function renderMatrix(mats,s1,s2){
+    const {H,data,n,m,mode}=mats, chosen=chooseStarts(mats), capped=chosen.cells.slice(0,12), alignments=capped.map(([i,j])=>traceback(mats,s1,s2,i,j));
+    const pathSet=new Set(),startSet=new Set();alignments.forEach(al=>{startSet.add(al.startI+','+al.startJ);al.steps.forEach(st=>{if(st.i>0&&st.j>0)pathSet.add(st.i+','+st.j);});});
+    matrixHeading.textContent='S matrix ('+({'local':'local','semiglobal':'semi-global','global':'global'}[mode])+' alignment scores)';
+    footerHint.textContent='Boundary setting: '+({'local':'local — max anywhere to first 0','semiglobal':'semi-global — best last row/column to a margin','global':'global — bottom-right to top-left'}[mode])+'. Tie order: diagonal → horizontal → vertical'+(mode==='local'?' → zero':'')+'. Affine gap cost: open + extend × (n − 1).';
+    let html='<thead><tr><th></th><th></th>';for(let j=0;j<m;j++)html+='<th class="seqhead">'+s2[j]+'</th>';html+='</tr><tr><th></th><th>0</th>';for(let j=1;j<=m;j++)html+='<th>'+j+'</th>';html+='</tr></thead><tbody>';
+    for(let i=0;i<=n;i++){html+='<tr>';html+=i===0?'<th></th><th>0</th>':'<th class="seqhead">'+s1[i-1]+'</th><th>'+i+'</th>';for(let j=0;j<=m;j++){
+      const val=H[i][j], boundary=(i===0||j===0);if(boundary){html+='<td class="cell '+(val===0?'zero-cell ':'')+(startSet.has(i+','+j)?'start-cell ':'')+'" data-i="'+i+'" data-j="'+j+'">'+val+'</td>';continue;}
+      const cell=data[i][j],tie=cell.ties.length>1,key=i+','+j;let cls='cell';if(val===0)cls+=' zero-cell';if(tie)cls+=' tie-cell';if(pathSet.has(key))cls+=' path-cell';if(startSet.has(key))cls+=' start-cell';html+='<td class="'+cls+'" data-i="'+i+'" data-j="'+j+'">'+val+(tie?'<span class="tie-dot"></span>':'')+'</td>';}
+      html+='</tr>';}
+    matrixTable.innerHTML=html+'</tbody>';
+    matrixTable.querySelectorAll('td.cell').forEach(td=>td.addEventListener('click',()=>{const i=Number(td.dataset.i),j=Number(td.dataset.j);if(lastSelectedTd)lastSelectedTd.classList.remove('selected-cell');td.classList.add('selected-cell');lastSelectedTd=td;showCellDetail(i,j);}));
+    matrixTable._maxScore=chosen.score;matrixTable._alignments=alignments;matrixTable._startCount=chosen.cells.length;
+  }
+
+  function dirLabel(type){return {diag:'diagonal (aligned pair)',horiz:'horizontal (gap in seq 1)',vert:'vertical (gap in seq 2)',zero:'zero (restart)'}[type];}
+  function showCellDetail(i,j){
+    if(i===0||j===0){const val=cellData.H[i][j];let msg='Boundary cell = '+val+'. ';if(currentMode==='local')msg+='Local initialization fixes both margins at 0.';else if(currentMode==='semiglobal')msg+='Semi-global initialization makes terminal overhangs free.';else msg+='Global initialization penalizes this boundary gap using the affine gap formula.';cellDetail.innerHTML='<div class="coord">Cell ('+i+', '+j+')</div><div class="placeholder">'+msg+'</div>';return;}
+    const c=cellData.data[i][j];let rows='';const order=[{type:'diag',label:'diagonal',val:c.diag},{type:'horiz',label:'horizontal',val:c.horiz},{type:'vert',label:'vertical',val:c.vert}];if(currentMode==='local')order.push({type:'zero',label:'zero',val:0});
+    order.forEach(o=>{const tied=c.ties.some(t=>t.type===o.type),chosen=c.primary.type===o.type;rows+='<tr><td>'+o.label+'</td><td>'+o.val+'</td><td>'+(chosen?'<span class="pill chosen">chosen</span>':tied?'<span class="pill tied">tied, not chosen</span>':'')+'</td></tr>';});
+    const gap='<table><tr><th></th><th>open</th><th>extend</th></tr><tr><td>horizontal (E)</td><td>'+c.horizOpen+'</td><td>'+(c.horizExt===-Infinity?'—':c.horizExt)+'</td></tr><tr><td>vertical (F)</td><td>'+c.vertOpen+'</td><td>'+(c.vertExt===-Infinity?'—':c.vertExt)+'</td></tr></table>';
+    cellDetail.innerHTML='<div class="coord">Cell ('+i+', '+j+') · S('+seq1[i-1]+', '+seq2[j-1]+') = '+c.H+'</div><table><tr><th>case</th><th>score</th><th></th></tr>'+rows+'</table>'+(c.ties.length>1?'<div class="tie-note">Tie between: '+c.ties.map(t=>dirLabel(t.type)).join(' · ')+' — priority picks <b>'+dirLabel(c.primary.type)+'</b>.</div>':'')+'<div style="margin-top:10px; color:var(--muted); font-size:11.5px;">Gap sub-scores (open vs. extend component):</div>'+gap;
+  }
+
+  function renderSummaryAndAlignments(mats,s1,s2){
+    const score=matrixTable._maxScore,als=matrixTable._alignments;statScore.textContent=score;statLen1.textContent=s1.length;statLen2.textContent=s2.length;statStarts.textContent=matrixTable._startCount+(matrixTable._startCount>12?'+':'');
+    document.querySelector('#resultsPanel .stat:nth-child(4) .lbl').textContent=currentMode==='local'?'cells tied for top score':currentMode==='semiglobal'?'best terminal cells tied':'traceback start cells';
+    if(currentMode==='local'&&score===0){alignmentsList.innerHTML='<div class="placeholder">No positive-scoring local alignment exists with these parameters.</div>';return;}
+    let html='';als.forEach((al,k)=>{html+='<div class="alignment-card"><div class="meta"><span>alignment '+(k+1)+' · x['+al.xStart+'..'+al.xEnd+'] · y['+al.yStart+'..'+al.yEnd+'] · '+currentMode+'</span><b>score '+al.score+'</b></div><pre class="align-block"><span class="align-line seq1">'+escapeHtml(al.a1)+'</span>\n<span class="align-line mid">'+escapeHtml(al.mid)+'</span>\n<span class="align-line seq2">'+escapeHtml(al.a2)+'</span></pre>'+(al.tieCount?'<div class="tie-note">'+al.tieCount+' cell(s) along this path had a tie among recurrence cases.</div>':'')+'</div>';});alignmentsList.innerHTML=html;
+  }
+  function escapeHtml(str){return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  computeBtn.addEventListener('click',runCompute);[seq1Input,seq2Input,matchInput,mismatchInput,gapOpenInput,gapExtendInput,modeInput].forEach(el=>el.addEventListener('keydown',e=>{if(e.key==='Enter')runCompute();}));
+  runCompute();
+})();
+</script>
+</body>
+</html>
