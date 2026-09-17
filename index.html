@@ -506,7 +506,9 @@
   modeInput.addEventListener('change', updateModeNote);
   updateGapPreview(); updateModeNote();
 
-  function sanitizeSeq(raw) { return raw.toUpperCase().replace(/[^A-Z]/g, ''); }
+  function sanitizeSeq(raw) { 
+    return raw.trim().toUpperCase(); 
+  }
   function bestWithPriority(items) {
     const best = Math.max(...items.map(x => x.val));
     return {best, ties: items.filter(x => x.val === best), primary: items.find(x => x.val === best)};
@@ -621,6 +623,7 @@
     errorMsg.textContent='';
     const s1=sanitizeSeq(seq1Input.value),s2=sanitizeSeq(seq2Input.value),match=Number(matchInput.value),mismatch=Number(mismatchInput.value),go=Number(gapOpenInput.value),ge=Number(gapExtendInput.value),mode=modeInput.value;
     if(!s1.length||!s2.length){errorMsg.textContent='Enter letters (A–Z) for both sequences.';return;}
+    if(!/^[A-Z]+$/.test(s1)||!/^[A-Z]+$/.test(s2)){errorMsg.textContent='Invalid sequence. Use letters A–Z only.';return;}
     if(s1.length>28||s2.length>28){errorMsg.textContent='Sequences capped at 28 characters each.';return;}
     if([match,mismatch,go,ge].some(Number.isNaN)){errorMsg.textContent='All scoring parameters must be numbers.';return;}
     seq1=s1;seq2=s2;currentMode=mode;
