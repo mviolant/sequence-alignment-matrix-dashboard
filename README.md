@@ -11,7 +11,7 @@ https://mviolant.github.io/sequence-alignment-matrix-dashboard/
 
 ### Inputs and Scoring
 
-![Dashboard controls and scoring parameters](dashboard-preview.png)
+![Dashboard controls and scoring parameters](dashboard-parameters.png)
 
 ### Matrix and Alignment Output
 
