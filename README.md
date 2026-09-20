@@ -8,7 +8,14 @@ The application allows users to compare how different alignment boundary conditi
 https://mviolant.github.io/sequence-alignment-matrix-dashboard/
 
 ## Dashboard Preview
-![Pairwise Sequence Alignment Dashboard](dashboard-preview.png)
+
+### Inputs and Scoring
+
+![Dashboard controls and scoring parameters](dashboard-preview.png)
+
+### Matrix and Alignment Output
+
+![Dynamic programming matrix and alignment output](dashboard-matrix.png)
 
 ## Overview
 
