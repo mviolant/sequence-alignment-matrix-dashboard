@@ -7,6 +7,10 @@ The application allows users to compare how different alignment boundary conditi
 🔗 **Live Demo:**  
 https://mviolant.github.io/sequence-alignment-matrix-dashboard/
 
+## Dashboard Preview
+
+![Pairwise Sequence Alignment Dashboard](dashboard-preview.png)
+
 ## Overview
 
 Pairwise sequence alignment can produce very different results depending on whether the goal is to align complete sequences, allow unpenalized terminal gaps, or identify only the best matching subsequences.
