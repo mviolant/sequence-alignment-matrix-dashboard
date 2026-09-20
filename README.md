@@ -151,8 +151,7 @@ Testing different parameter combinations helped identify both expected algorithm
 - HTML
 - CSS
 - JavaScript
-- Git
-- GitHub
+- Git / GitHub
 - GitHub Pages
 
 ## Project Context
