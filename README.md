@@ -86,7 +86,8 @@ Sequence Y: TGCTCGTA
 
 Match: +5
 Mismatch: -2
-Gap: -6
+Gap open: 6
+Gap extend: 2
 ```
 
 The optimal result changes depending on the alignment regime.
@@ -98,7 +99,7 @@ T--TCATA
 TGCTCGTA
 ```
 
-Score: **11**
+Score: **15**
 
 ### Semi-global
 
