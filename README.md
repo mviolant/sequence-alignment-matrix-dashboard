@@ -78,8 +78,8 @@ Possible transitions include:
 
 ```text
 Diagonal   → match or mismatch
-Horizontal → gap in one sequence
-Vertical   → gap in the other sequence
+Horizontal → gap in sequence 1
+Vertical   → gap in sequence 2
 ```
 
 The initialization and traceback rules depend on the selected alignment regime.
