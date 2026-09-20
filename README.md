@@ -70,3 +70,101 @@ Possible transitions include:
 Diagonal   → match or mismatch
 Horizontal → gap in one sequence
 Vertical   → gap in the other sequence
+```
+
+The initialization and traceback rules depend on the selected alignment regime.
+
+Changing those boundary conditions allows the same dynamic programming framework to produce global, semi-global, or local alignments.
+
+## Example Comparison
+
+Consider:
+
+```text
+Sequence X: TTCATA
+Sequence Y: TGCTCGTA
+
+Match: +5
+Mismatch: -2
+Gap: -6
+```
+
+The optimal result changes depending on the alignment regime.
+
+### Global
+
+```text
+T--TCATA
+TGCTCGTA
+```
+
+Score: **11**
+
+### Semi-global
+
+```text
+--TTCATA
+TGCTCGTA
+```
+
+Score: **16**
+
+### Local
+
+```text
+TCATA
+TCGTA
+```
+
+Score: **18**
+
+This example demonstrates that the definition of an optimal alignment depends not only on the scoring parameters but also on the biological assumptions represented by the boundary conditions.
+
+## Affine Gap Penalties
+
+The dashboard supports affine gap penalties.
+
+Rather than assigning the same cost to every gap position, affine scoring separates:
+
+- **gap opening**
+- **gap extension**
+
+This allows the algorithm to distinguish between starting a new insertion/deletion event and extending an existing one.
+
+Changing the gap-opening penalty can therefore alter both the alignment score and the structure of the resulting alignment.
+
+## Testing and Validation
+
+The dashboard was evaluated using predefined sequence-alignment test cases designed to examine:
+
+- boundary-condition behavior
+- affine gap penalties
+- traceback decisions
+- gap-opening conventions
+- invalid sequence input
+- expected versus observed alignment scores
+
+Testing different parameter combinations helped identify both expected algorithmic behavior and implementation limitations.
+
+## Technologies
+
+- HTML
+- CSS
+- JavaScript
+- Git
+- GitHub
+- GitHub Pages
+
+## Project Context
+
+Developed as part of graduate-level coursework in **Bioinformatics and Genomics at UNC Charlotte**.
+
+This project is intended as an educational implementation and visualization of sequence-alignment algorithms. It is not intended to replace optimized production bioinformatics software.
+
+## Author
+
+**Maria Violante**  
+M.S. Bioinformatics Candidate  
+UNC Charlotte
+
+GitHub: https://github.com/mviolant
